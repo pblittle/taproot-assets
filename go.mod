@@ -37,7 +37,7 @@ require (
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.9.0
-	github.com/urfave/cli v1.22.9
+	github.com/urfave/cli v1.22.14
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
 	golang.org/x/net v0.33.0
 	golang.org/x/sync v0.10.0
@@ -73,8 +73,8 @@ require (
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
-	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.1 // indirect
 	github.com/decred/dcrd/lru v1.1.2 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
@@ -135,6 +135,7 @@ require (
 	github.com/mholt/acmez v1.0.4 // indirect
 	github.com/miekg/dns v1.1.50 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/sys/user v0.3.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -142,7 +143,7 @@ require (
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.1.14 // indirect
+	github.com/opencontainers/runc v1.2.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
@@ -150,9 +151,8 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rogpeppe/fastuuid v1.2.0 // indirect
-	github.com/russross/blackfriday/v2 v2.0.1 // indirect
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/sirupsen/logrus v1.9.2 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
