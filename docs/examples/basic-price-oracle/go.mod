@@ -12,7 +12,7 @@ replace (
 
 require (
 	github.com/lightninglabs/taproot-assets v0.5.0-rc1
-	github.com/sirupsen/logrus v1.9.2
+	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/grpc v1.59.0
 )
 
