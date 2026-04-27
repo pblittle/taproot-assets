@@ -6613,10 +6613,11 @@ func (r *RPCServer) AssetRoots(ctx context.Context,
 	}
 
 	// First, we'll retrieve the full set of known asset Universe roots.
+	sortDir := unmarshalUniSortDirection(req.Direction)
 	assetRoots, err := r.cfg.UniverseArchive.RootNodes(
 		ctx, universe.RootNodesQuery{
 			WithAmountsById: req.WithAmountsById,
-			SortDirection:   unmarshalUniSortDirection(req.Direction),
+			SortDirection:   sortDir,
 			Offset:          req.Offset,
 			Limit:           req.Limit,
 		},
@@ -7142,11 +7143,10 @@ func (r *RPCServer) AssetLeaves(ctx context.Context,
 		return nil, err
 	}
 
+	sortDir := unmarshalUniSortDirection(req.Direction)
 	assetLeaves, err := r.cfg.UniverseArchive.FetchLeaves(
 		ctx, universeID, universe.FetchLeavesQuery{
-			SortDirection: unmarshalUniSortDirection(
-				req.Direction,
-			),
+			SortDirection: sortDir,
 			Offset:        req.Offset,
 			Limit:         req.Limit,
 		},
