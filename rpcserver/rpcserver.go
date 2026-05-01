@@ -11444,7 +11444,9 @@ func (r *RPCServer) ImportAssetsFromBackup(ctx context.Context,
 		ProofVerifier: r.ProofVerifierCtx(ctx),
 	}
 
-	numImported, err := backup.ImportBackup(ctx, req.Backup, cfg)
+	numImported, numSkipped, err := backup.ImportBackup(
+		ctx, req.Backup, cfg,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to import backup: %w",
 			err)
@@ -11452,5 +11454,6 @@ func (r *RPCServer) ImportAssetsFromBackup(ctx context.Context,
 
 	return &wrpc.ImportAssetsFromBackupResponse{
 		NumImported: numImported,
+		NumSkipped:  numSkipped,
 	}, nil
 }
