@@ -66,6 +66,14 @@ var allTestCases = []*testCase{
 		test: testBackupRestoreTransferred,
 	},
 	{
+		name: "backup restore grouped",
+		test: testBackupRestoreGrouped,
+	},
+	{
+		name: "backup restore optimistic",
+		test: testBackupRestoreOptimistic,
+	},
+	{
 		name: "addresses",
 		test: testAddresses,
 	},
