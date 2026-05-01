@@ -2529,6 +2529,10 @@
             "$ref": "#/definitions/universerpcAssetKey"
           },
           "description": "The set of asset leaf keys for the given asset ID or group key."
+        },
+        "has_more": {
+          "type": "boolean",
+          "description": "Indicates whether there are more results beyond the current\npage."
         }
       }
     },
@@ -2542,6 +2546,10 @@
             "$ref": "#/definitions/universerpcAssetLeaf"
           },
           "description": "The set of asset leaves for the given asset ID or group key."
+        },
+        "has_more": {
+          "type": "boolean",
+          "description": "Indicates whether there are more results beyond the current\npage."
         }
       }
     },
@@ -2603,6 +2611,10 @@
             "$ref": "#/definitions/universerpcUniverseRoot"
           },
           "description": "A map of the set of known universe roots for each asset. The key in the\nmap is the 32-byte asset_id or group key hash."
+        },
+        "has_more": {
+          "type": "boolean",
+          "description": "Indicates whether there are more results beyond the current page."
         }
       }
     },
@@ -3345,6 +3357,10 @@
             "$ref": "#/definitions/universerpcAssetStatsSnapshot"
           },
           "description": "The asset statistics snapshot for the queried assets."
+        },
+        "has_more": {
+          "type": "boolean",
+          "description": "Indicates whether there are more results beyond the current\npage."
         }
       }
     },

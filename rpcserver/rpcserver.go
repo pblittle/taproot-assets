@@ -6596,20 +6596,39 @@ func unmarshalUniSortDirection(
 	}
 }
 
+// validatePage validates the pagination parameters for universe
+// queries.
+func validatePage(offset, limit int32) error {
+	if offset < 0 {
+		return fmt.Errorf("invalid request offset: %d", offset)
+	}
+	if limit < 0 || limit > universe.MaxPageSize {
+		return fmt.Errorf("invalid request limit: %d", limit)
+	}
+
+	return nil
+}
+
 // AssetRoots queries for the known Universe roots associated with each known
 // asset. These roots represent the supply/audit state for each known asset.
 func (r *RPCServer) AssetRoots(ctx context.Context,
 	req *unirpc.AssetRootRequest) (*unirpc.AssetRootResponse, error) {
 
-	if req.Limit > universe.MaxPageSize || req.Limit < 0 {
-		return nil, fmt.Errorf("invalid request limit: %d",
-			req.Limit)
+	if err := validatePage(req.Offset, req.Limit); err != nil {
+		return nil, err
 	}
 
 	// Check the rate limiter to see if we need to wait at all. If not
 	// then this'll be a noop.
 	if err := r.proofQueryRateLimiter.Wait(ctx); err != nil {
 		return nil, err
+	}
+
+	// Default to RequestPageSize if no limit is set, and query one
+	// extra row to determine if there are more results.
+	limit := req.Limit
+	if limit == 0 {
+		limit = universe.RequestPageSize
 	}
 
 	// First, we'll retrieve the full set of known asset Universe roots.
@@ -6619,17 +6638,23 @@ func (r *RPCServer) AssetRoots(ctx context.Context,
 			WithAmountsById: req.WithAmountsById,
 			SortDirection:   sortDir,
 			Offset:          req.Offset,
-			Limit:           req.Limit,
+			Limit:           limit + 1,
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	hasMore := int32(len(assetRoots)) > limit
+	if hasMore {
+		assetRoots = assetRoots[:limit]
+	}
+
 	resp := &unirpc.AssetRootResponse{
 		UniverseRoots: make(
 			map[string]*unirpc.UniverseRoot, len(assetRoots),
 		),
+		HasMore: hasMore,
 	}
 
 	// Retrieve config for use in filtering asset roots based on sync export
@@ -7041,8 +7066,8 @@ func (r *RPCServer) AssetLeafKeys(ctx context.Context,
 		return nil, fmt.Errorf("proof type must be specified")
 	}
 
-	if req.Limit > universe.MaxPageSize || req.Limit < 0 {
-		return nil, fmt.Errorf("invalid request limit: %d", req.Limit)
+	if err = validatePage(req.Offset, req.Limit); err != nil {
+		return nil, err
 	}
 
 	// Check the rate limiter to see if we need to wait at all. If not then
@@ -7051,20 +7076,33 @@ func (r *RPCServer) AssetLeafKeys(ctx context.Context,
 		return nil, err
 	}
 
+	// Default to RequestPageSize if no limit is set, and query one
+	// extra row to determine if there are more results.
+	limit := req.Limit
+	if limit == 0 {
+		limit = universe.RequestPageSize
+	}
+
 	leafKeys, err := r.cfg.UniverseArchive.UniverseLeafKeys(
 		ctx, universe.UniverseLeafKeysQuery{
 			Id:            universeID,
 			SortDirection: unmarshalUniSortDirection(req.Direction),
 			Offset:        req.Offset,
-			Limit:         req.Limit,
+			Limit:         limit + 1,
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	hasMore := int32(len(leafKeys)) > limit
+	if hasMore {
+		leafKeys = leafKeys[:limit]
+	}
+
 	resp := &unirpc.AssetLeafKeyResponse{
 		AssetKeys: make([]*unirpc.AssetKey, len(leafKeys)),
+		HasMore:   hasMore,
 	}
 
 	for i, leafKey := range leafKeys {
@@ -7127,14 +7165,8 @@ func (r *RPCServer) AssetLeaves(ctx context.Context,
 		return nil, err
 	}
 
-	if req.Limit > universe.MaxPageSize || req.Limit < 0 {
-		return nil, fmt.Errorf("invalid request limit: %d",
-			req.Limit)
-	}
-
-	if req.Offset < 0 {
-		return nil, fmt.Errorf("invalid request offset: %d",
-			req.Offset)
+	if err = validatePage(req.Offset, req.Limit); err != nil {
+		return nil, err
 	}
 
 	// Check the rate limiter to see if we need to wait at all. If not
@@ -7143,20 +7175,33 @@ func (r *RPCServer) AssetLeaves(ctx context.Context,
 		return nil, err
 	}
 
+	// Default to RequestPageSize if no limit is set, and query one
+	// extra row to determine if there are more results.
+	limit := req.Limit
+	if limit == 0 {
+		limit = universe.RequestPageSize
+	}
+
 	sortDir := unmarshalUniSortDirection(req.Direction)
 	assetLeaves, err := r.cfg.UniverseArchive.FetchLeaves(
 		ctx, universeID, universe.FetchLeavesQuery{
 			SortDirection: sortDir,
 			Offset:        req.Offset,
-			Limit:         req.Limit,
+			Limit:         limit + 1,
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	hasMore := int32(len(assetLeaves)) > limit
+	if hasMore {
+		assetLeaves = assetLeaves[:limit]
+	}
+
 	resp := &unirpc.AssetLeafResponse{
-		Leaves: make([]*unirpc.AssetLeaf, len(assetLeaves)),
+		Leaves:  make([]*unirpc.AssetLeaf, len(assetLeaves)),
+		HasMore: hasMore,
 	}
 	for i, assetLeaf := range assetLeaves {
 		assetLeaf := assetLeaf
@@ -8334,6 +8379,17 @@ func (r *RPCServer) marshalAssetSyncSnapshot(ctx context.Context,
 func (r *RPCServer) QueryAssetStats(ctx context.Context,
 	req *unirpc.AssetStatsQuery) (*unirpc.UniverseAssetStats, error) {
 
+	if err := validatePage(req.Offset, req.Limit); err != nil {
+		return nil, err
+	}
+
+	// Default to RequestPageSize if no limit is set, and query one
+	// extra row to determine if there are more results.
+	limit := req.Limit
+	if limit == 0 {
+		limit = universe.RequestPageSize
+	}
+
 	assetStats, err := r.cfg.UniverseStats.QuerySyncStats(
 		ctx, universe.SyncStatsQuery{
 			AssetNameFilter: req.AssetNameFilter,
@@ -8355,17 +8411,25 @@ func (r *RPCServer) QueryAssetStats(ctx context.Context,
 			SortBy:        universe.SyncStatsSort(req.SortBy),
 			SortDirection: unmarshalUniSortDirection(req.Direction),
 			Offset:        int(req.Offset),
-			Limit:         int(req.Limit),
+			Limit:         int(limit + 1),
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	hasMore := int32(len(assetStats.SyncStats)) > limit
+	if hasMore {
+		assetStats.SyncStats =
+			assetStats.SyncStats[:limit]
+	}
+
 	resp := &unirpc.UniverseAssetStats{
 		AssetStats: make(
-			[]*unirpc.AssetStatsSnapshot, len(assetStats.SyncStats),
+			[]*unirpc.AssetStatsSnapshot,
+			len(assetStats.SyncStats),
 		),
+		HasMore: hasMore,
 	}
 	for idx, snapshot := range assetStats.SyncStats {
 		rpcSnapshot, err := r.marshalAssetSyncSnapshot(ctx, snapshot)

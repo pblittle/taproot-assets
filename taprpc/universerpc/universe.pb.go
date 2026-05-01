@@ -676,6 +676,8 @@ type AssetRootResponse struct {
 	// A map of the set of known universe roots for each asset. The key in the
 	// map is the 32-byte asset_id or group key hash.
 	UniverseRoots map[string]*UniverseRoot `protobuf:"bytes,1,rep,name=universe_roots,json=universeRoots,proto3" json:"universe_roots,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Indicates whether there are more results beyond the current page.
+	HasMore       bool `protobuf:"varint,2,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -715,6 +717,13 @@ func (x *AssetRootResponse) GetUniverseRoots() map[string]*UniverseRoot {
 		return x.UniverseRoots
 	}
 	return nil
+}
+
+func (x *AssetRootResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
 }
 
 type AssetRootQuery struct {
@@ -1312,7 +1321,10 @@ func (x *AssetLeavesRequest) GetDirection() taprpc.SortDirection {
 type AssetLeafKeyResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The set of asset leaf keys for the given asset ID or group key.
-	AssetKeys     []*AssetKey `protobuf:"bytes,1,rep,name=asset_keys,json=assetKeys,proto3" json:"asset_keys,omitempty"`
+	AssetKeys []*AssetKey `protobuf:"bytes,1,rep,name=asset_keys,json=assetKeys,proto3" json:"asset_keys,omitempty"`
+	// Indicates whether there are more results beyond the current
+	// page.
+	HasMore       bool `protobuf:"varint,2,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1352,6 +1364,13 @@ func (x *AssetLeafKeyResponse) GetAssetKeys() []*AssetKey {
 		return x.AssetKeys
 	}
 	return nil
+}
+
+func (x *AssetLeafKeyResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
 }
 
 type AssetLeaf struct {
@@ -1413,7 +1432,10 @@ func (x *AssetLeaf) GetProof() []byte {
 type AssetLeafResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The set of asset leaves for the given asset ID or group key.
-	Leaves        []*AssetLeaf `protobuf:"bytes,1,rep,name=leaves,proto3" json:"leaves,omitempty"`
+	Leaves []*AssetLeaf `protobuf:"bytes,1,rep,name=leaves,proto3" json:"leaves,omitempty"`
+	// Indicates whether there are more results beyond the current
+	// page.
+	HasMore       bool `protobuf:"varint,2,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1453,6 +1475,13 @@ func (x *AssetLeafResponse) GetLeaves() []*AssetLeaf {
 		return x.Leaves
 	}
 	return nil
+}
+
+func (x *AssetLeafResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
 }
 
 type UniverseKey struct {
@@ -2862,7 +2891,10 @@ func (x *AssetStatsAsset) GetDecimalDisplay() uint32 {
 type UniverseAssetStats struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The asset statistics snapshot for the queried assets.
-	AssetStats    []*AssetStatsSnapshot `protobuf:"bytes,1,rep,name=asset_stats,json=assetStats,proto3" json:"asset_stats,omitempty"`
+	AssetStats []*AssetStatsSnapshot `protobuf:"bytes,1,rep,name=asset_stats,json=assetStats,proto3" json:"asset_stats,omitempty"`
+	// Indicates whether there are more results beyond the current
+	// page.
+	HasMore       bool `protobuf:"varint,2,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2902,6 +2934,13 @@ func (x *UniverseAssetStats) GetAssetStats() []*AssetStatsSnapshot {
 		return x.AssetStats
 	}
 	return nil
+}
+
+func (x *UniverseAssetStats) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
 }
 
 type QueryEventsRequest struct {
@@ -4822,9 +4861,10 @@ const file_universerpc_universe_proto_rawDesc = "" +
 	"\x13amounts_by_asset_id\x18\x05 \x03(\v2/.universerpc.UniverseRoot.AmountsByAssetIdEntryR\x10amountsByAssetId\x1aC\n" +
 	"\x15AmountsByAssetIdEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x04R\x05value:\x028\x01\"\xca\x01\n" +
+	"\x05value\x18\x02 \x01(\x04R\x05value:\x028\x01\"\xe5\x01\n" +
 	"\x11AssetRootResponse\x12X\n" +
-	"\x0euniverse_roots\x18\x01 \x03(\v21.universerpc.AssetRootResponse.UniverseRootsEntryR\runiverseRoots\x1a[\n" +
+	"\x0euniverse_roots\x18\x01 \x03(\v21.universerpc.AssetRootResponse.UniverseRootsEntryR\runiverseRoots\x12\x19\n" +
+	"\bhas_more\x18\x02 \x01(\bR\ahasMore\x1a[\n" +
 	"\x12UniverseRootsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
 	"\x05value\x18\x02 \x01(\v2\x19.universerpc.UniverseRootR\x05value:\x028\x01\"1\n" +
@@ -4860,15 +4900,17 @@ const file_universerpc_universe_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\v2\x0f.universerpc.IDR\x02id\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x123\n" +
-	"\tdirection\x18\x04 \x01(\x0e2\x15.taprpc.SortDirectionR\tdirection\"L\n" +
+	"\tdirection\x18\x04 \x01(\x0e2\x15.taprpc.SortDirectionR\tdirection\"g\n" +
 	"\x14AssetLeafKeyResponse\x124\n" +
 	"\n" +
-	"asset_keys\x18\x01 \x03(\v2\x15.universerpc.AssetKeyR\tassetKeys\"F\n" +
+	"asset_keys\x18\x01 \x03(\v2\x15.universerpc.AssetKeyR\tassetKeys\x12\x19\n" +
+	"\bhas_more\x18\x02 \x01(\bR\ahasMore\"F\n" +
 	"\tAssetLeaf\x12#\n" +
 	"\x05asset\x18\x01 \x01(\v2\r.taprpc.AssetR\x05asset\x12\x14\n" +
-	"\x05proof\x18\x02 \x01(\fR\x05proof\"C\n" +
+	"\x05proof\x18\x02 \x01(\fR\x05proof\"^\n" +
 	"\x11AssetLeafResponse\x12.\n" +
-	"\x06leaves\x18\x01 \x03(\v2\x16.universerpc.AssetLeafR\x06leaves\"`\n" +
+	"\x06leaves\x18\x01 \x03(\v2\x16.universerpc.AssetLeafR\x06leaves\x12\x19\n" +
+	"\bhas_more\x18\x02 \x01(\bR\ahasMore\"`\n" +
 	"\vUniverseKey\x12\x1f\n" +
 	"\x02id\x18\x01 \x01(\v2\x0f.universerpc.IDR\x02id\x120\n" +
 	"\bleaf_key\x18\x02 \x01(\v2\x15.universerpc.AssetKeyR\aleafKey\"\xb4\x03\n" +
@@ -4958,10 +5000,11 @@ const file_universerpc_universe_proto_rawDesc = "" +
 	"\x0egenesis_height\x18\x06 \x01(\x05R\rgenesisHeight\x12+\n" +
 	"\x11genesis_timestamp\x18\a \x01(\x03R\x10genesisTimestamp\x12!\n" +
 	"\fanchor_point\x18\b \x01(\tR\vanchorPoint\x12'\n" +
-	"\x0fdecimal_display\x18\t \x01(\rR\x0edecimalDisplay\"V\n" +
+	"\x0fdecimal_display\x18\t \x01(\rR\x0edecimalDisplay\"q\n" +
 	"\x12UniverseAssetStats\x12@\n" +
 	"\vasset_stats\x18\x01 \x03(\v2\x1f.universerpc.AssetStatsSnapshotR\n" +
-	"assetStats\"b\n" +
+	"assetStats\x12\x19\n" +
+	"\bhas_more\x18\x02 \x01(\bR\ahasMore\"b\n" +
 	"\x12QueryEventsRequest\x12'\n" +
 	"\x0fstart_timestamp\x18\x01 \x01(\x03R\x0estartTimestamp\x12#\n" +
 	"\rend_timestamp\x18\x02 \x01(\x03R\fendTimestamp\"Q\n" +

@@ -346,6 +346,11 @@
 - [PR#2100](https://github.com/lightninglabs/taproot-assets/pull/2100)
   Add pagination support (offset, limit, direction) to the `AssetLeaves`
   RPC endpoint, and add `MaxPageSize` validation to `AssetRoots`.
+  Standardize pagination validation across `AssetRoots`,
+  `AssetLeafKeys`, `AssetLeaves`, and `QueryAssetStats` via a shared
+  `validatePage` helper, and add a `has_more` field to all four
+  response types. Default `limit=0` to `MaxPageSize` instead of
+  `RequestPageSize`.
 
 
 ## tapcli Updates

@@ -451,14 +451,15 @@ func universeLeaves(ctx *cli.Context) error {
 			return err
 		}
 
-		if len(page.Leaves) == 0 {
-			break
-		}
-
 		assetLeaves.Leaves = append(
 			assetLeaves.Leaves, page.Leaves...,
 		)
-		offset += universe.RequestPageSize
+
+		if !page.HasMore {
+			break
+		}
+
+		offset += len(page.Leaves)
 	}
 
 	printRespJSON(assetLeaves)
