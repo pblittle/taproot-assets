@@ -940,10 +940,11 @@ message TransferInput {
     uint64 amount = 4;
 
     // The group key of the asset that was spent, if the asset belongs to a
-    // group. Empty for assets that are not part of a group. Consumers that
-    // want a single user-facing identifier should prefer this field when set
-    // and fall back to asset_id otherwise.
+    // group. Empty for assets that are not part of a group.
     bytes group_key = 5;
+
+    // The type of the asset that was spent.
+    AssetType asset_type = 6;
 }
 
 message TransferOutputAnchor {
@@ -1081,9 +1082,11 @@ message TransferOutput {
 
     // The group key of the asset that was created in this output, if the
     // asset belongs to a group. Empty for assets that are not part of a
-    // group. Consumers that want a single user-facing identifier should
-    // prefer this field when set and fall back to asset_id otherwise.
+    // group.
     bytes group_key = 15;
+
+    // The type of the asset that was created in this output.
+    AssetType asset_type = 16;
 }
 
 message StopRequest {
