@@ -3143,6 +3143,11 @@
           "type": "string",
           "format": "uint64",
           "description": "The amount of the asset that was spent."
+        },
+        "group_key": {
+          "type": "string",
+          "format": "byte",
+          "description": "The group key of the asset that was spent, if the asset belongs to a\ngroup. Empty for assets that are not part of a group. Consumers that\nwant a single user-facing identifier should prefer this field when set\nand fall back to asset_id otherwise."
         }
       }
     },
@@ -3211,6 +3216,11 @@
         "tap_addr": {
           "type": "string",
           "description": "The Taproot Asset address that was used to create the output. This is\nonly set for new outputs for tapd versions that support the address V2\nformat. For older versions, this field will be empty."
+        },
+        "group_key": {
+          "type": "string",
+          "format": "byte",
+          "description": "The group key of the asset that was created in this output, if the\nasset belongs to a group. Empty for assets that are not part of a\ngroup. Consumers that want a single user-facing identifier should\nprefer this field when set and fall back to asset_id otherwise."
         }
       }
     },

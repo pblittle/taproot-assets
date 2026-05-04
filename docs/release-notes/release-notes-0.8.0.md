@@ -330,6 +330,9 @@
   Add pagination support (offset, limit, direction) to the `ListAssets` RPC
   endpoint.
 
+- [PR#2122](https://github.com/lightninglabs/taproot-assets/pull/2122)
+  Add a `group_key` field to `TransferInput` and `TransferOutput`. Affects `ListTransfers` and the `transfer` field embedded in `SendEvent`.
+
 ## tapcli Updates
 
 - [PR#1995](https://github.com/lightninglabs/taproot-assets/pull/1995)
