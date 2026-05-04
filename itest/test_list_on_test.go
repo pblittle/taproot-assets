@@ -467,6 +467,10 @@ var allTestCases = []*testCase{
 		name: "address v2 import fails without courier",
 		test: testAddressV2ImportFailsWithoutCourier,
 	},
+	{
+		name: "transfer group key",
+		test: testTransferGroupKey,
+	},
 }
 
 var optionalTestCases = []*testCase{
