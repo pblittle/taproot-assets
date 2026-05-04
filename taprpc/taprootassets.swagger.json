@@ -3147,7 +3147,11 @@
         "group_key": {
           "type": "string",
           "format": "byte",
-          "description": "The group key of the asset that was spent, if the asset belongs to a\ngroup. Empty for assets that are not part of a group. Consumers that\nwant a single user-facing identifier should prefer this field when set\nand fall back to asset_id otherwise."
+          "description": "The group key of the asset that was spent, if the asset belongs to a\ngroup. Empty for assets that are not part of a group."
+        },
+        "asset_type": {
+          "$ref": "#/definitions/taprpcAssetType",
+          "description": "The type of the asset that was spent."
         }
       }
     },
@@ -3220,7 +3224,11 @@
         "group_key": {
           "type": "string",
           "format": "byte",
-          "description": "The group key of the asset that was created in this output, if the\nasset belongs to a group. Empty for assets that are not part of a\ngroup. Consumers that want a single user-facing identifier should\nprefer this field when set and fall back to asset_id otherwise."
+          "description": "The group key of the asset that was created in this output, if the\nasset belongs to a group. Empty for assets that are not part of a\ngroup."
+        },
+        "asset_type": {
+          "$ref": "#/definitions/taprpcAssetType",
+          "description": "The type of the asset that was created in this output."
         }
       }
     },

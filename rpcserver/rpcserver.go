@@ -1706,7 +1706,7 @@ func (r *RPCServer) ListTransfers(ctx context.Context,
 		Transfers: make([]*taprpc.AssetTransfer, len(parcels)),
 	}
 
-	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	resolver := newTransferAssetInfoResolver(ctx, r.cfg.TapAddrBook)
 	for idx := range parcels {
 		resp.Transfers[idx], err = marshalOutboundParcel(
 			parcels[idx], resolver,
@@ -2886,7 +2886,7 @@ func (r *RPCServer) AnchorVirtualPsbts(ctx context.Context,
 		return nil, fmt.Errorf("error requesting delivery: %w", err)
 	}
 
-	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	resolver := newTransferAssetInfoResolver(ctx, r.cfg.TapAddrBook)
 	parcel, err := marshalOutboundParcel(resp, resolver)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling outbound parcel: %w",
@@ -3385,7 +3385,7 @@ func (r *RPCServer) PublishAndLogTransfer(ctx context.Context,
 		return nil, fmt.Errorf("error requesting delivery: %w", err)
 	}
 
-	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	resolver := newTransferAssetInfoResolver(ctx, r.cfg.TapAddrBook)
 	parcel, err := marshalOutboundParcel(resp, resolver)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling outbound parcel: %w",
@@ -3820,7 +3820,7 @@ func (r *RPCServer) SendAsset(ctx context.Context,
 		return nil, err
 	}
 
-	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	resolver := newTransferAssetInfoResolver(ctx, r.cfg.TapAddrBook)
 	parcel, err := marshalOutboundParcel(resp, resolver)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling outbound parcel: %w",
@@ -4079,7 +4079,7 @@ func (r *RPCServer) BurnAsset(ctx context.Context,
 		return nil, err
 	}
 
-	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	resolver := newTransferAssetInfoResolver(ctx, r.cfg.TapAddrBook)
 	parcel, err := marshalOutboundParcel(resp, resolver)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling outbound parcel: %w",
@@ -4154,44 +4154,55 @@ func marshalRpcBurn(b *tapfreighter.AssetBurn) *taprpc.AssetBurn {
 	}
 }
 
-// transferGroupKeyResolver caches asset_id -> serialized group key lookups so
-// a transfer with N inputs/outputs sharing one asset collapses to one DB
-// query. An empty []byte cached value means "asset has no group" — the
-// resolver distinguishes a genuine miss from a not-yet-fetched entry via map
-// presence. The resolver is safe for concurrent use, so it can also be
-// captured by a SubscribeSendEvents marshaler closure that processes events
-// on the porter's goroutine.
-type transferGroupKeyResolver struct {
+type transferAssetInfo struct {
+	groupKey  []byte
+	assetType asset.Type
+}
+
+// transferAssetInfoResolver caches asset_id -> transfer asset metadata lookups
+// so a transfer with N inputs/outputs sharing one asset collapses to one DB
+// query. A nil groupKey means "asset has no group". The resolver distinguishes
+// a genuine cache miss from a cached ungrouped asset via map presence. The
+// resolver is safe for concurrent use, so it can also be captured by a
+// SubscribeSendEvents marshaler closure that processes events on the porter's
+// goroutine.
+type transferAssetInfoResolver struct {
 	ctx   context.Context
 	addrs *tapdb.TapAddressBook
 
 	mu    sync.RWMutex
-	cache map[asset.ID][]byte
+	cache map[asset.ID]transferAssetInfo
 }
 
-// newTransferGroupKeyResolver builds a resolver bound to ctx and the daemon's
+// newTransferAssetInfoResolver builds a resolver bound to ctx and the daemon's
 // address book. Pass a request-scoped ctx for unary RPCs and a
 // stream-scoped ctx for subscription marshalers.
-func newTransferGroupKeyResolver(ctx context.Context,
-	addrs *tapdb.TapAddressBook) *transferGroupKeyResolver {
+func newTransferAssetInfoResolver(ctx context.Context,
+	addrs *tapdb.TapAddressBook) *transferAssetInfoResolver {
 
-	return &transferGroupKeyResolver{
+	return &transferAssetInfoResolver{
 		ctx:   ctx,
 		addrs: addrs,
-		cache: make(map[asset.ID][]byte),
+		cache: make(map[asset.ID]transferAssetInfo),
 	}
 }
 
-// groupKeyFor returns the compressed serialized group public key for assetID,
-// or an empty slice if the asset has no group. The result is cached for the
-// lifetime of the resolver.
+func defaultTransferAssetInfo() transferAssetInfo {
+	return transferAssetInfo{
+		assetType: asset.Normal,
+	}
+}
+
+// infoFor returns the transfer asset metadata for assetID. The result is
+// cached for the lifetime of the resolver.
 //
 // A daemon that does not know the asset's genesis
-// (address.ErrAssetGroupUnknown) is treated as "no group" rather than a hard
-// error so that ListTransfers stays resilient against gaps in older rows;
-// downstream consumers fall back to asset_id in that case, which preserves
-// the pre-fix behavior.
-func (r *transferGroupKeyResolver) groupKeyFor(id asset.ID) ([]byte, error) {
+// (address.ErrAssetGroupUnknown) is treated as an ungrouped normal asset rather
+// than a hard error so that ListTransfers stays resilient against gaps in older
+// rows.
+func (r *transferAssetInfoResolver) infoFor(id asset.ID) (
+	transferAssetInfo, error) {
+
 	r.mu.RLock()
 	cached, ok := r.cache[id]
 	r.mu.RUnlock()
@@ -4199,58 +4210,64 @@ func (r *transferGroupKeyResolver) groupKeyFor(id asset.ID) ([]byte, error) {
 		return cached, nil
 	}
 
+	defaultInfo := defaultTransferAssetInfo()
 	if r.addrs == nil {
-		r.store(id, nil)
-		return nil, nil
+		r.store(id, defaultInfo)
+		return defaultInfo, nil
 	}
 
 	group, err := r.addrs.QueryAssetGroupByID(r.ctx, id)
 	switch {
 	case errors.Is(err, address.ErrAssetGroupUnknown):
-		r.store(id, nil)
-		return nil, nil
+		r.store(id, defaultInfo)
+		return defaultInfo, nil
 
 	case err != nil:
-		return nil, fmt.Errorf("unable to look up group for asset "+
+		return transferAssetInfo{}, fmt.Errorf("unable to look up "+
+			"asset information for asset "+
 			"%x: %w", id[:], err)
 	}
 
-	if group == nil || group.GroupKey == nil {
-		r.store(id, nil)
-		return nil, nil
+	info := defaultInfo
+	if group != nil && group.Genesis != nil {
+		info.assetType = group.Genesis.Type
 	}
 
-	keyBytes := group.GroupKey.GroupPubKey.SerializeCompressed()
-	r.store(id, keyBytes)
-	return keyBytes, nil
+	if group != nil && group.GroupKey != nil {
+		info.groupKey = group.GroupKey.GroupPubKey.SerializeCompressed()
+	}
+
+	r.store(id, info)
+	return info, nil
 }
 
-func (r *transferGroupKeyResolver) store(id asset.ID, keyBytes []byte) {
+func (r *transferAssetInfoResolver) store(id asset.ID,
+	info transferAssetInfo) {
+
 	r.mu.Lock()
-	r.cache[id] = keyBytes
+	r.cache[id] = info
 	r.mu.Unlock()
 }
 
 // marshalOutboundParcel turns a pending parcel into its RPC counterpart.
 //
 // resolver may be nil; callers that pass nil get a transfer without group_key
-// populated on inputs/outputs (legacy behavior). All in-tree call sites
-// supply a resolver via (*RPCServer).marshalOutboundParcel.
+// populated on inputs/outputs and with asset_type defaulting to NORMAL.
 func marshalOutboundParcel(parcel *tapfreighter.OutboundParcel,
-	resolver *transferGroupKeyResolver) (*taprpc.AssetTransfer, error) {
+	resolver *transferAssetInfoResolver) (*taprpc.AssetTransfer, error) {
 
-	resolveGroupKey := func(id asset.ID) ([]byte, error) {
+	resolveAssetInfo := func(id asset.ID) (transferAssetInfo, error) {
 		if resolver == nil {
-			return nil, nil
+			return defaultTransferAssetInfo(), nil
 		}
-		return resolver.groupKeyFor(id)
+		return resolver.infoFor(id)
 	}
 
 	rpcInputs := make([]*taprpc.TransferInput, len(parcel.Inputs))
 	for idx := range parcel.Inputs {
 		in := parcel.Inputs[idx]
 
-		groupKey, err := resolveGroupKey(in.ID)
+		assetInfo, err := resolveAssetInfo(in.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -4260,7 +4277,8 @@ func marshalOutboundParcel(parcel *tapfreighter.OutboundParcel,
 			AssetId:     in.ID[:],
 			ScriptKey:   in.ScriptKey[:],
 			Amount:      in.Amount,
-			GroupKey:    groupKey,
+			GroupKey:    assetInfo.groupKey,
+			AssetType:   taprpc.AssetType(assetInfo.assetType),
 		}
 	}
 
@@ -4310,7 +4328,7 @@ func marshalOutboundParcel(parcel *tapfreighter.OutboundParcel,
 				"proof: %w", err)
 		}
 
-		groupKey, err := resolveGroupKey(proofAssetID)
+		assetInfo, err := resolveAssetInfo(proofAssetID)
 		if err != nil {
 			return nil, err
 		}
@@ -4333,7 +4351,10 @@ func marshalOutboundParcel(parcel *tapfreighter.OutboundParcel,
 			AssetId:             proofAssetID[:],
 			ProofCourierAddr:    string(out.ProofCourierAddr),
 			TapAddr:             out.TapAddress,
-			GroupKey:            groupKey,
+			GroupKey:            assetInfo.groupKey,
+			AssetType: taprpc.AssetType(
+				assetInfo.assetType,
+			),
 		}
 	}
 
@@ -5499,9 +5520,10 @@ func (r *RPCServer) SubscribeSendEvents(req *taprpc.SubscribeSendEventsRequest,
 	}
 
 	// One resolver instance covers both historical replay and live event
-	// processing for this subscription. Group keys are stable for any given
-	// asset_id so the cache stays correct for the lifetime of the stream.
-	resolver := newTransferGroupKeyResolver(
+	// processing for this subscription. Transfer asset information is
+	// stable for any given asset_id, so the cache stays correct for the
+	// lifetime of the stream.
+	resolver := newTransferAssetInfoResolver(
 		ntfnStream.Context(), r.cfg.TapAddrBook,
 	)
 	marshalEvent := func(event fn.Event) (*taprpc.SendEvent, error) {
@@ -5834,10 +5856,11 @@ func marshallSendAssetEvent(event fn.Event) (*tapdevrpc.SendAssetEvent, error) {
 
 // marshalSendEvent marshals an asset send event into the RPC counterpart.
 //
-// resolver populates the group_key field on any embedded transfer's inputs
-// and outputs. May be nil for callers that do not need group_key populated.
+// resolver populates the group_key and asset_type fields on any embedded
+// transfer's inputs and outputs. It may be nil for callers that do not need
+// enriched transfer metadata.
 func marshalSendEvent(event fn.Event,
-	resolver *transferGroupKeyResolver) (*taprpc.SendEvent, error) {
+	resolver *transferAssetInfoResolver) (*taprpc.SendEvent, error) {
 
 	e, ok := event.(*tapfreighter.AssetSendEvent)
 	if !ok {
