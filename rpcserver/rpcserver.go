@@ -1706,8 +1706,11 @@ func (r *RPCServer) ListTransfers(ctx context.Context,
 		Transfers: make([]*taprpc.AssetTransfer, len(parcels)),
 	}
 
+	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
 	for idx := range parcels {
-		resp.Transfers[idx], err = marshalOutboundParcel(parcels[idx])
+		resp.Transfers[idx], err = marshalOutboundParcel(
+			parcels[idx], resolver,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal parcel: %w",
 				err)
@@ -2883,7 +2886,8 @@ func (r *RPCServer) AnchorVirtualPsbts(ctx context.Context,
 		return nil, fmt.Errorf("error requesting delivery: %w", err)
 	}
 
-	parcel, err := marshalOutboundParcel(resp)
+	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	parcel, err := marshalOutboundParcel(resp, resolver)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling outbound parcel: %w",
 			err)
@@ -3381,7 +3385,8 @@ func (r *RPCServer) PublishAndLogTransfer(ctx context.Context,
 		return nil, fmt.Errorf("error requesting delivery: %w", err)
 	}
 
-	parcel, err := marshalOutboundParcel(resp)
+	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	parcel, err := marshalOutboundParcel(resp, resolver)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling outbound parcel: %w",
 			err)
@@ -3815,7 +3820,8 @@ func (r *RPCServer) SendAsset(ctx context.Context,
 		return nil, err
 	}
 
-	parcel, err := marshalOutboundParcel(resp)
+	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	parcel, err := marshalOutboundParcel(resp, resolver)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling outbound parcel: %w",
 			err)
@@ -4073,7 +4079,8 @@ func (r *RPCServer) BurnAsset(ctx context.Context,
 		return nil, err
 	}
 
-	parcel, err := marshalOutboundParcel(resp)
+	resolver := newTransferGroupKeyResolver(ctx, r.cfg.TapAddrBook)
+	parcel, err := marshalOutboundParcel(resp, resolver)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling outbound parcel: %w",
 			err)
@@ -4147,19 +4154,113 @@ func marshalRpcBurn(b *tapfreighter.AssetBurn) *taprpc.AssetBurn {
 	}
 }
 
+// transferGroupKeyResolver caches asset_id -> serialized group key lookups so
+// a transfer with N inputs/outputs sharing one asset collapses to one DB
+// query. An empty []byte cached value means "asset has no group" — the
+// resolver distinguishes a genuine miss from a not-yet-fetched entry via map
+// presence. The resolver is safe for concurrent use, so it can also be
+// captured by a SubscribeSendEvents marshaler closure that processes events
+// on the porter's goroutine.
+type transferGroupKeyResolver struct {
+	ctx   context.Context
+	addrs *tapdb.TapAddressBook
+
+	mu    sync.RWMutex
+	cache map[asset.ID][]byte
+}
+
+// newTransferGroupKeyResolver builds a resolver bound to ctx and the daemon's
+// address book. Pass a request-scoped ctx for unary RPCs and a
+// stream-scoped ctx for subscription marshalers.
+func newTransferGroupKeyResolver(ctx context.Context,
+	addrs *tapdb.TapAddressBook) *transferGroupKeyResolver {
+
+	return &transferGroupKeyResolver{
+		ctx:   ctx,
+		addrs: addrs,
+		cache: make(map[asset.ID][]byte),
+	}
+}
+
+// groupKeyFor returns the compressed serialized group public key for assetID,
+// or an empty slice if the asset has no group. The result is cached for the
+// lifetime of the resolver.
+//
+// A daemon that does not know the asset's genesis
+// (address.ErrAssetGroupUnknown) is treated as "no group" rather than a hard
+// error so that ListTransfers stays resilient against gaps in older rows;
+// downstream consumers fall back to asset_id in that case, which preserves
+// the pre-fix behavior.
+func (r *transferGroupKeyResolver) groupKeyFor(id asset.ID) ([]byte, error) {
+	r.mu.RLock()
+	cached, ok := r.cache[id]
+	r.mu.RUnlock()
+	if ok {
+		return cached, nil
+	}
+
+	if r.addrs == nil {
+		r.store(id, nil)
+		return nil, nil
+	}
+
+	group, err := r.addrs.QueryAssetGroupByID(r.ctx, id)
+	switch {
+	case errors.Is(err, address.ErrAssetGroupUnknown):
+		r.store(id, nil)
+		return nil, nil
+
+	case err != nil:
+		return nil, fmt.Errorf("unable to look up group for asset "+
+			"%x: %w", id[:], err)
+	}
+
+	if group == nil || group.GroupKey == nil {
+		r.store(id, nil)
+		return nil, nil
+	}
+
+	keyBytes := group.GroupKey.GroupPubKey.SerializeCompressed()
+	r.store(id, keyBytes)
+	return keyBytes, nil
+}
+
+func (r *transferGroupKeyResolver) store(id asset.ID, keyBytes []byte) {
+	r.mu.Lock()
+	r.cache[id] = keyBytes
+	r.mu.Unlock()
+}
+
 // marshalOutboundParcel turns a pending parcel into its RPC counterpart.
-func marshalOutboundParcel(
-	parcel *tapfreighter.OutboundParcel) (*taprpc.AssetTransfer,
-	error) {
+//
+// resolver may be nil; callers that pass nil get a transfer without group_key
+// populated on inputs/outputs (legacy behavior). All in-tree call sites
+// supply a resolver via (*RPCServer).marshalOutboundParcel.
+func marshalOutboundParcel(parcel *tapfreighter.OutboundParcel,
+	resolver *transferGroupKeyResolver) (*taprpc.AssetTransfer, error) {
+
+	resolveGroupKey := func(id asset.ID) ([]byte, error) {
+		if resolver == nil {
+			return nil, nil
+		}
+		return resolver.groupKeyFor(id)
+	}
 
 	rpcInputs := make([]*taprpc.TransferInput, len(parcel.Inputs))
 	for idx := range parcel.Inputs {
 		in := parcel.Inputs[idx]
+
+		groupKey, err := resolveGroupKey(in.ID)
+		if err != nil {
+			return nil, err
+		}
+
 		rpcInputs[idx] = &taprpc.TransferInput{
 			AnchorPoint: in.OutPoint.String(),
 			AssetId:     in.ID[:],
 			ScriptKey:   in.ScriptKey[:],
 			Amount:      in.Amount,
+			GroupKey:    groupKey,
 		}
 	}
 
@@ -4209,6 +4310,11 @@ func marshalOutboundParcel(
 				"proof: %w", err)
 		}
 
+		groupKey, err := resolveGroupKey(proofAssetID)
+		if err != nil {
+			return nil, err
+		}
+
 		// Marshall the proof delivery status.
 		proofDeliveryStatus := marshalOutputProofDeliveryStatus(out)
 
@@ -4227,6 +4333,7 @@ func marshalOutboundParcel(
 			AssetId:             proofAssetID[:],
 			ProofCourierAddr:    string(out.ProofCourierAddr),
 			TapAddr:             out.TapAddress,
+			GroupKey:            groupKey,
 		}
 	}
 
@@ -5391,6 +5498,16 @@ func (r *RPCServer) SubscribeSendEvents(req *taprpc.SubscribeSendEventsRequest,
 		targetScriptKey = fn.MaybeSome(scriptKey)
 	}
 
+	// One resolver instance covers both historical replay and live event
+	// processing for this subscription. Group keys are stable for any given
+	// asset_id so the cache stays correct for the lifetime of the stream.
+	resolver := newTransferGroupKeyResolver(
+		ntfnStream.Context(), r.cfg.TapAddrBook,
+	)
+	marshalEvent := func(event fn.Event) (*taprpc.SendEvent, error) {
+		return marshalSendEvent(event, resolver)
+	}
+
 	// If a start timestamp is provided, first send historical events.
 	if req.StartTimestamp > 0 {
 		// Convert microseconds to time.Time
@@ -5441,7 +5558,7 @@ func (r *RPCServer) SubscribeSendEvents(req *taprpc.SubscribeSendEventsRequest,
 			// Since we already filtered at the database level, we
 			// can directly send all events. Marshal and send the
 			// event.
-			rpcEvent, err := marshalSendEvent(event)
+			rpcEvent, err := marshalEvent(event)
 			if err != nil {
 				rpcsLog.Errorf("Failed to marshal historical "+
 					"send event: %v", err)
@@ -5479,7 +5596,7 @@ func (r *RPCServer) SubscribeSendEvents(req *taprpc.SubscribeSendEventsRequest,
 	}
 
 	return handleEvents[bool, *taprpc.SendEvent](
-		r.cfg.ChainPorter, ntfnStream, marshalSendEvent, shouldNotify,
+		r.cfg.ChainPorter, ntfnStream, marshalEvent, shouldNotify,
 		r.quit, false,
 	)
 }
@@ -5716,7 +5833,12 @@ func marshallSendAssetEvent(event fn.Event) (*tapdevrpc.SendAssetEvent, error) {
 }
 
 // marshalSendEvent marshals an asset send event into the RPC counterpart.
-func marshalSendEvent(event fn.Event) (*taprpc.SendEvent, error) {
+//
+// resolver populates the group_key field on any embedded transfer's inputs
+// and outputs. May be nil for callers that do not need group_key populated.
+func marshalSendEvent(event fn.Event,
+	resolver *transferGroupKeyResolver) (*taprpc.SendEvent, error) {
+
 	e, ok := event.(*tapfreighter.AssetSendEvent)
 	if !ok {
 		return nil, fmt.Errorf("invalid event type: %T", event)
@@ -5831,7 +5953,9 @@ func marshalSendEvent(event fn.Event) (*taprpc.SendEvent, error) {
 	}
 
 	if e.Transfer != nil {
-		result.Transfer, err = marshalOutboundParcel(e.Transfer)
+		result.Transfer, err = marshalOutboundParcel(
+			e.Transfer, resolver,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling transfer: %w",
 				err)

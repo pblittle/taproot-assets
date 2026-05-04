@@ -3406,7 +3406,12 @@ type TransferInput struct {
 	// The script key of the asset that was spent.
 	ScriptKey []byte `protobuf:"bytes,3,opt,name=script_key,json=scriptKey,proto3" json:"script_key,omitempty"`
 	// The amount of the asset that was spent.
-	Amount        uint64 `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	Amount uint64 `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	// The group key of the asset that was spent, if the asset belongs to a
+	// group. Empty for assets that are not part of a group. Consumers that
+	// want a single user-facing identifier should prefer this field when set
+	// and fall back to asset_id otherwise.
+	GroupKey      []byte `protobuf:"bytes,5,opt,name=group_key,json=groupKey,proto3" json:"group_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3467,6 +3472,13 @@ func (x *TransferInput) GetAmount() uint64 {
 		return x.Amount
 	}
 	return 0
+}
+
+func (x *TransferInput) GetGroupKey() []byte {
+	if x != nil {
+		return x.GroupKey
+	}
+	return nil
 }
 
 type TransferOutputAnchor struct {
@@ -3637,7 +3649,12 @@ type TransferOutput struct {
 	// The Taproot Asset address that was used to create the output. This is
 	// only set for new outputs for tapd versions that support the address V2
 	// format. For older versions, this field will be empty.
-	TapAddr       string `protobuf:"bytes,14,opt,name=tap_addr,json=tapAddr,proto3" json:"tap_addr,omitempty"`
+	TapAddr string `protobuf:"bytes,14,opt,name=tap_addr,json=tapAddr,proto3" json:"tap_addr,omitempty"`
+	// The group key of the asset that was created in this output, if the
+	// asset belongs to a group. Empty for assets that are not part of a
+	// group. Consumers that want a single user-facing identifier should
+	// prefer this field when set and fall back to asset_id otherwise.
+	GroupKey      []byte `protobuf:"bytes,15,opt,name=group_key,json=groupKey,proto3" json:"group_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3768,6 +3785,13 @@ func (x *TransferOutput) GetTapAddr() string {
 		return x.TapAddr
 	}
 	return ""
+}
+
+func (x *TransferOutput) GetGroupKey() []byte {
+	if x != nil {
+		return x.GroupKey
+	}
+	return nil
 }
 
 type StopRequest struct {
@@ -7655,13 +7679,14 @@ const file_taprootassets_proto_rawDesc = "" +
 	"\x16anchor_tx_block_height\x18\b \x01(\rR\x13anchorTxBlockHeight\x12\x14\n" +
 	"\x05label\x18\t \x01(\tR\x05label\x12\x1b\n" +
 	"\tanchor_tx\x18\n" +
-	" \x01(\fR\banchorTx\"\x84\x01\n" +
+	" \x01(\fR\banchorTx\"\xa1\x01\n" +
 	"\rTransferInput\x12!\n" +
 	"\fanchor_point\x18\x01 \x01(\tR\vanchorPoint\x12\x19\n" +
 	"\basset_id\x18\x02 \x01(\fR\aassetId\x12\x1d\n" +
 	"\n" +
 	"script_key\x18\x03 \x01(\fR\tscriptKey\x12\x16\n" +
-	"\x06amount\x18\x04 \x01(\x04R\x06amount\"\xb2\x02\n" +
+	"\x06amount\x18\x04 \x01(\x04R\x06amount\x12\x1b\n" +
+	"\tgroup_key\x18\x05 \x01(\fR\bgroupKey\"\xb2\x02\n" +
 	"\x14TransferOutputAnchor\x12\x1a\n" +
 	"\boutpoint\x18\x01 \x01(\tR\boutpoint\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x03R\x05value\x12!\n" +
@@ -7671,7 +7696,7 @@ const file_taprootassets_proto_rawDesc = "" +
 	"merkleRoot\x12+\n" +
 	"\x11tapscript_sibling\x18\x06 \x01(\fR\x10tapscriptSibling\x12,\n" +
 	"\x12num_passive_assets\x18\a \x01(\rR\x10numPassiveAssets\x12\x1b\n" +
-	"\tpk_script\x18\b \x01(\fR\bpkScript\"\xf7\x04\n" +
+	"\tpk_script\x18\b \x01(\fR\bpkScript\"\x94\x05\n" +
 	"\x0eTransferOutput\x124\n" +
 	"\x06anchor\x18\x01 \x01(\v2\x1c.taprpc.TransferOutputAnchorR\x06anchor\x12\x1d\n" +
 	"\n" +
@@ -7689,7 +7714,8 @@ const file_taprootassets_proto_rawDesc = "" +
 	"\x15proof_delivery_status\x18\v \x01(\x0e2\x1b.taprpc.ProofDeliveryStatusR\x13proofDeliveryStatus\x12\x19\n" +
 	"\basset_id\x18\f \x01(\fR\aassetId\x12,\n" +
 	"\x12proof_courier_addr\x18\r \x01(\tR\x10proofCourierAddr\x12\x19\n" +
-	"\btap_addr\x18\x0e \x01(\tR\atapAddr\"\r\n" +
+	"\btap_addr\x18\x0e \x01(\tR\atapAddr\x12\x1b\n" +
+	"\tgroup_key\x18\x0f \x01(\fR\bgroupKey\"\r\n" +
 	"\vStopRequest\"\x0e\n" +
 	"\fStopResponse\"F\n" +
 	"\x11DebugLevelRequest\x12\x12\n" +
