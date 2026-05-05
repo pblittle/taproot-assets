@@ -6628,7 +6628,9 @@ type AssetBurn struct {
 	// The amount of burnt assets.
 	Amount uint64 `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
 	// The txid of the transaction that the burn was anchored to.
-	AnchorTxid    []byte `protobuf:"bytes,5,opt,name=anchor_txid,json=anchorTxid,proto3" json:"anchor_txid,omitempty"`
+	AnchorTxid []byte `protobuf:"bytes,5,opt,name=anchor_txid,json=anchorTxid,proto3" json:"anchor_txid,omitempty"`
+	// The type of the burnt asset.
+	AssetType     AssetType `protobuf:"varint,6,opt,name=asset_type,json=assetType,proto3,enum=taprpc.AssetType" json:"asset_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6696,6 +6698,13 @@ func (x *AssetBurn) GetAnchorTxid() []byte {
 		return x.AnchorTxid
 	}
 	return nil
+}
+
+func (x *AssetBurn) GetAssetType() AssetType {
+	if x != nil {
+		return x.AssetType
+	}
+	return AssetType_NORMAL
 }
 
 type ListBurnsResponse struct {
@@ -7937,14 +7946,16 @@ const file_taprootassets_proto_rawDesc = "" +
 	"\basset_id\x18\x01 \x01(\fR\aassetId\x12*\n" +
 	"\x11tweaked_group_key\x18\x03 \x01(\fR\x0ftweakedGroupKey\x12\x1f\n" +
 	"\vanchor_txid\x18\x04 \x01(\fR\n" +
-	"anchorTxid\"\x9f\x01\n" +
+	"anchorTxid\"\xd1\x01\n" +
 	"\tAssetBurn\x12\x12\n" +
 	"\x04note\x18\x01 \x01(\tR\x04note\x12\x19\n" +
 	"\basset_id\x18\x02 \x01(\fR\aassetId\x12*\n" +
 	"\x11tweaked_group_key\x18\x03 \x01(\fR\x0ftweakedGroupKey\x12\x16\n" +
 	"\x06amount\x18\x04 \x01(\x04R\x06amount\x12\x1f\n" +
 	"\vanchor_txid\x18\x05 \x01(\fR\n" +
-	"anchorTxid\"<\n" +
+	"anchorTxid\x120\n" +
+	"\n" +
+	"asset_type\x18\x06 \x01(\x0e2\x11.taprpc.AssetTypeR\tassetType\"<\n" +
 	"\x11ListBurnsResponse\x12'\n" +
 	"\x05burns\x18\x01 \x03(\v2\x11.taprpc.AssetBurnR\x05burns\"i\n" +
 	"\x1dSubscribeReceiveEventsRequest\x12\x1f\n" +
@@ -8290,76 +8301,77 @@ var file_taprootassets_proto_depIdxs = []int32{
 	44,  // 76: taprpc.BurnAssetResponse.burn_transfer:type_name -> taprpc.AssetTransfer
 	65,  // 77: taprpc.BurnAssetResponse.burn_proof:type_name -> taprpc.DecodedProof
 	65,  // 78: taprpc.BurnAssetResponse.burn_proofs:type_name -> taprpc.DecodedProof
-	86,  // 79: taprpc.ListBurnsResponse.burns:type_name -> taprpc.AssetBurn
-	52,  // 80: taprpc.ReceiveEvent.address:type_name -> taprpc.Addr
-	7,   // 81: taprpc.ReceiveEvent.status:type_name -> taprpc.AddrEventStatus
-	9,   // 82: taprpc.SendEvent.parcel_type:type_name -> taprpc.ParcelType
-	52,  // 83: taprpc.SendEvent.addresses:type_name -> taprpc.Addr
-	92,  // 84: taprpc.SendEvent.anchor_transaction:type_name -> taprpc.AnchorTransaction
-	44,  // 85: taprpc.SendEvent.transfer:type_name -> taprpc.AssetTransfer
-	103, // 86: taprpc.AnchorTransaction.lnd_locked_utxos:type_name -> taprpc.OutPoint
-	103, // 87: taprpc.RegisterTransferRequest.outpoint:type_name -> taprpc.OutPoint
-	26,  // 88: taprpc.RegisterTransferResponse.registered_asset:type_name -> taprpc.Asset
-	95,  // 89: taprpc.BakeMacaroonRequest.permissions:type_name -> taprpc.MacaroonPermission
-	31,  // 90: taprpc.ListUtxosResponse.ManagedUtxosEntry.value:type_name -> taprpc.ManagedUtxo
-	35,  // 91: taprpc.ListGroupsResponse.GroupsEntry.value:type_name -> taprpc.GroupedAssets
-	38,  // 92: taprpc.ListBalancesResponse.AssetBalancesEntry.value:type_name -> taprpc.AssetBalance
-	39,  // 93: taprpc.ListBalancesResponse.AssetGroupBalancesEntry.value:type_name -> taprpc.AssetGroupBalance
-	14,  // 94: taprpc.TaprootAssets.ListAssets:input_type -> taprpc.ListAssetRequest
-	12,  // 95: taprpc.TaprootAssets.FetchAsset:input_type -> taprpc.FetchAssetRequest
-	30,  // 96: taprpc.TaprootAssets.ListUtxos:input_type -> taprpc.ListUtxosRequest
-	33,  // 97: taprpc.TaprootAssets.ListGroups:input_type -> taprpc.ListGroupsRequest
-	37,  // 98: taprpc.TaprootAssets.ListBalances:input_type -> taprpc.ListBalancesRequest
-	41,  // 99: taprpc.TaprootAssets.ListTransfers:input_type -> taprpc.ListTransfersRequest
-	48,  // 100: taprpc.TaprootAssets.StopDaemon:input_type -> taprpc.StopRequest
-	50,  // 101: taprpc.TaprootAssets.DebugLevel:input_type -> taprpc.DebugLevelRequest
-	53,  // 102: taprpc.TaprootAssets.QueryAddrs:input_type -> taprpc.QueryAddrRequest
-	55,  // 103: taprpc.TaprootAssets.NewAddr:input_type -> taprpc.NewAddrRequest
-	63,  // 104: taprpc.TaprootAssets.DecodeAddr:input_type -> taprpc.DecodeAddrRequest
-	73,  // 105: taprpc.TaprootAssets.AddrReceives:input_type -> taprpc.AddrReceivesRequest
-	64,  // 106: taprpc.TaprootAssets.VerifyProof:input_type -> taprpc.ProofFile
-	67,  // 107: taprpc.TaprootAssets.DecodeProof:input_type -> taprpc.DecodeProofRequest
-	69,  // 108: taprpc.TaprootAssets.ExportProof:input_type -> taprpc.ExportProofRequest
-	70,  // 109: taprpc.TaprootAssets.UnpackProofFile:input_type -> taprpc.UnpackProofFileRequest
-	75,  // 110: taprpc.TaprootAssets.SendAsset:input_type -> taprpc.SendAssetRequest
-	83,  // 111: taprpc.TaprootAssets.BurnAsset:input_type -> taprpc.BurnAssetRequest
-	85,  // 112: taprpc.TaprootAssets.ListBurns:input_type -> taprpc.ListBurnsRequest
-	79,  // 113: taprpc.TaprootAssets.GetInfo:input_type -> taprpc.GetInfoRequest
-	96,  // 114: taprpc.TaprootAssets.BakeMacaroon:input_type -> taprpc.BakeMacaroonRequest
-	81,  // 115: taprpc.TaprootAssets.FetchAssetMeta:input_type -> taprpc.FetchAssetMetaRequest
-	88,  // 116: taprpc.TaprootAssets.SubscribeReceiveEvents:input_type -> taprpc.SubscribeReceiveEventsRequest
-	90,  // 117: taprpc.TaprootAssets.SubscribeSendEvents:input_type -> taprpc.SubscribeSendEventsRequest
-	93,  // 118: taprpc.TaprootAssets.RegisterTransfer:input_type -> taprpc.RegisterTransferRequest
-	29,  // 119: taprpc.TaprootAssets.ListAssets:output_type -> taprpc.ListAssetResponse
-	13,  // 120: taprpc.TaprootAssets.FetchAsset:output_type -> taprpc.FetchAssetResponse
-	32,  // 121: taprpc.TaprootAssets.ListUtxos:output_type -> taprpc.ListUtxosResponse
-	36,  // 122: taprpc.TaprootAssets.ListGroups:output_type -> taprpc.ListGroupsResponse
-	40,  // 123: taprpc.TaprootAssets.ListBalances:output_type -> taprpc.ListBalancesResponse
-	42,  // 124: taprpc.TaprootAssets.ListTransfers:output_type -> taprpc.ListTransfersResponse
-	49,  // 125: taprpc.TaprootAssets.StopDaemon:output_type -> taprpc.StopResponse
-	51,  // 126: taprpc.TaprootAssets.DebugLevel:output_type -> taprpc.DebugLevelResponse
-	54,  // 127: taprpc.TaprootAssets.QueryAddrs:output_type -> taprpc.QueryAddrResponse
-	52,  // 128: taprpc.TaprootAssets.NewAddr:output_type -> taprpc.Addr
-	52,  // 129: taprpc.TaprootAssets.DecodeAddr:output_type -> taprpc.Addr
-	74,  // 130: taprpc.TaprootAssets.AddrReceives:output_type -> taprpc.AddrReceivesResponse
-	66,  // 131: taprpc.TaprootAssets.VerifyProof:output_type -> taprpc.VerifyProofResponse
-	68,  // 132: taprpc.TaprootAssets.DecodeProof:output_type -> taprpc.DecodeProofResponse
-	64,  // 133: taprpc.TaprootAssets.ExportProof:output_type -> taprpc.ProofFile
-	71,  // 134: taprpc.TaprootAssets.UnpackProofFile:output_type -> taprpc.UnpackProofFileResponse
-	78,  // 135: taprpc.TaprootAssets.SendAsset:output_type -> taprpc.SendAssetResponse
-	84,  // 136: taprpc.TaprootAssets.BurnAsset:output_type -> taprpc.BurnAssetResponse
-	87,  // 137: taprpc.TaprootAssets.ListBurns:output_type -> taprpc.ListBurnsResponse
-	80,  // 138: taprpc.TaprootAssets.GetInfo:output_type -> taprpc.GetInfoResponse
-	97,  // 139: taprpc.TaprootAssets.BakeMacaroon:output_type -> taprpc.BakeMacaroonResponse
-	82,  // 140: taprpc.TaprootAssets.FetchAssetMeta:output_type -> taprpc.FetchAssetMetaResponse
-	89,  // 141: taprpc.TaprootAssets.SubscribeReceiveEvents:output_type -> taprpc.ReceiveEvent
-	91,  // 142: taprpc.TaprootAssets.SubscribeSendEvents:output_type -> taprpc.SendEvent
-	94,  // 143: taprpc.TaprootAssets.RegisterTransfer:output_type -> taprpc.RegisterTransferResponse
-	119, // [119:144] is the sub-list for method output_type
-	94,  // [94:119] is the sub-list for method input_type
-	94,  // [94:94] is the sub-list for extension type_name
-	94,  // [94:94] is the sub-list for extension extendee
-	0,   // [0:94] is the sub-list for field type_name
+	0,   // 79: taprpc.AssetBurn.asset_type:type_name -> taprpc.AssetType
+	86,  // 80: taprpc.ListBurnsResponse.burns:type_name -> taprpc.AssetBurn
+	52,  // 81: taprpc.ReceiveEvent.address:type_name -> taprpc.Addr
+	7,   // 82: taprpc.ReceiveEvent.status:type_name -> taprpc.AddrEventStatus
+	9,   // 83: taprpc.SendEvent.parcel_type:type_name -> taprpc.ParcelType
+	52,  // 84: taprpc.SendEvent.addresses:type_name -> taprpc.Addr
+	92,  // 85: taprpc.SendEvent.anchor_transaction:type_name -> taprpc.AnchorTransaction
+	44,  // 86: taprpc.SendEvent.transfer:type_name -> taprpc.AssetTransfer
+	103, // 87: taprpc.AnchorTransaction.lnd_locked_utxos:type_name -> taprpc.OutPoint
+	103, // 88: taprpc.RegisterTransferRequest.outpoint:type_name -> taprpc.OutPoint
+	26,  // 89: taprpc.RegisterTransferResponse.registered_asset:type_name -> taprpc.Asset
+	95,  // 90: taprpc.BakeMacaroonRequest.permissions:type_name -> taprpc.MacaroonPermission
+	31,  // 91: taprpc.ListUtxosResponse.ManagedUtxosEntry.value:type_name -> taprpc.ManagedUtxo
+	35,  // 92: taprpc.ListGroupsResponse.GroupsEntry.value:type_name -> taprpc.GroupedAssets
+	38,  // 93: taprpc.ListBalancesResponse.AssetBalancesEntry.value:type_name -> taprpc.AssetBalance
+	39,  // 94: taprpc.ListBalancesResponse.AssetGroupBalancesEntry.value:type_name -> taprpc.AssetGroupBalance
+	14,  // 95: taprpc.TaprootAssets.ListAssets:input_type -> taprpc.ListAssetRequest
+	12,  // 96: taprpc.TaprootAssets.FetchAsset:input_type -> taprpc.FetchAssetRequest
+	30,  // 97: taprpc.TaprootAssets.ListUtxos:input_type -> taprpc.ListUtxosRequest
+	33,  // 98: taprpc.TaprootAssets.ListGroups:input_type -> taprpc.ListGroupsRequest
+	37,  // 99: taprpc.TaprootAssets.ListBalances:input_type -> taprpc.ListBalancesRequest
+	41,  // 100: taprpc.TaprootAssets.ListTransfers:input_type -> taprpc.ListTransfersRequest
+	48,  // 101: taprpc.TaprootAssets.StopDaemon:input_type -> taprpc.StopRequest
+	50,  // 102: taprpc.TaprootAssets.DebugLevel:input_type -> taprpc.DebugLevelRequest
+	53,  // 103: taprpc.TaprootAssets.QueryAddrs:input_type -> taprpc.QueryAddrRequest
+	55,  // 104: taprpc.TaprootAssets.NewAddr:input_type -> taprpc.NewAddrRequest
+	63,  // 105: taprpc.TaprootAssets.DecodeAddr:input_type -> taprpc.DecodeAddrRequest
+	73,  // 106: taprpc.TaprootAssets.AddrReceives:input_type -> taprpc.AddrReceivesRequest
+	64,  // 107: taprpc.TaprootAssets.VerifyProof:input_type -> taprpc.ProofFile
+	67,  // 108: taprpc.TaprootAssets.DecodeProof:input_type -> taprpc.DecodeProofRequest
+	69,  // 109: taprpc.TaprootAssets.ExportProof:input_type -> taprpc.ExportProofRequest
+	70,  // 110: taprpc.TaprootAssets.UnpackProofFile:input_type -> taprpc.UnpackProofFileRequest
+	75,  // 111: taprpc.TaprootAssets.SendAsset:input_type -> taprpc.SendAssetRequest
+	83,  // 112: taprpc.TaprootAssets.BurnAsset:input_type -> taprpc.BurnAssetRequest
+	85,  // 113: taprpc.TaprootAssets.ListBurns:input_type -> taprpc.ListBurnsRequest
+	79,  // 114: taprpc.TaprootAssets.GetInfo:input_type -> taprpc.GetInfoRequest
+	96,  // 115: taprpc.TaprootAssets.BakeMacaroon:input_type -> taprpc.BakeMacaroonRequest
+	81,  // 116: taprpc.TaprootAssets.FetchAssetMeta:input_type -> taprpc.FetchAssetMetaRequest
+	88,  // 117: taprpc.TaprootAssets.SubscribeReceiveEvents:input_type -> taprpc.SubscribeReceiveEventsRequest
+	90,  // 118: taprpc.TaprootAssets.SubscribeSendEvents:input_type -> taprpc.SubscribeSendEventsRequest
+	93,  // 119: taprpc.TaprootAssets.RegisterTransfer:input_type -> taprpc.RegisterTransferRequest
+	29,  // 120: taprpc.TaprootAssets.ListAssets:output_type -> taprpc.ListAssetResponse
+	13,  // 121: taprpc.TaprootAssets.FetchAsset:output_type -> taprpc.FetchAssetResponse
+	32,  // 122: taprpc.TaprootAssets.ListUtxos:output_type -> taprpc.ListUtxosResponse
+	36,  // 123: taprpc.TaprootAssets.ListGroups:output_type -> taprpc.ListGroupsResponse
+	40,  // 124: taprpc.TaprootAssets.ListBalances:output_type -> taprpc.ListBalancesResponse
+	42,  // 125: taprpc.TaprootAssets.ListTransfers:output_type -> taprpc.ListTransfersResponse
+	49,  // 126: taprpc.TaprootAssets.StopDaemon:output_type -> taprpc.StopResponse
+	51,  // 127: taprpc.TaprootAssets.DebugLevel:output_type -> taprpc.DebugLevelResponse
+	54,  // 128: taprpc.TaprootAssets.QueryAddrs:output_type -> taprpc.QueryAddrResponse
+	52,  // 129: taprpc.TaprootAssets.NewAddr:output_type -> taprpc.Addr
+	52,  // 130: taprpc.TaprootAssets.DecodeAddr:output_type -> taprpc.Addr
+	74,  // 131: taprpc.TaprootAssets.AddrReceives:output_type -> taprpc.AddrReceivesResponse
+	66,  // 132: taprpc.TaprootAssets.VerifyProof:output_type -> taprpc.VerifyProofResponse
+	68,  // 133: taprpc.TaprootAssets.DecodeProof:output_type -> taprpc.DecodeProofResponse
+	64,  // 134: taprpc.TaprootAssets.ExportProof:output_type -> taprpc.ProofFile
+	71,  // 135: taprpc.TaprootAssets.UnpackProofFile:output_type -> taprpc.UnpackProofFileResponse
+	78,  // 136: taprpc.TaprootAssets.SendAsset:output_type -> taprpc.SendAssetResponse
+	84,  // 137: taprpc.TaprootAssets.BurnAsset:output_type -> taprpc.BurnAssetResponse
+	87,  // 138: taprpc.TaprootAssets.ListBurns:output_type -> taprpc.ListBurnsResponse
+	80,  // 139: taprpc.TaprootAssets.GetInfo:output_type -> taprpc.GetInfoResponse
+	97,  // 140: taprpc.TaprootAssets.BakeMacaroon:output_type -> taprpc.BakeMacaroonResponse
+	82,  // 141: taprpc.TaprootAssets.FetchAssetMeta:output_type -> taprpc.FetchAssetMetaResponse
+	89,  // 142: taprpc.TaprootAssets.SubscribeReceiveEvents:output_type -> taprpc.ReceiveEvent
+	91,  // 143: taprpc.TaprootAssets.SubscribeSendEvents:output_type -> taprpc.SendEvent
+	94,  // 144: taprpc.TaprootAssets.RegisterTransfer:output_type -> taprpc.RegisterTransferResponse
+	120, // [120:145] is the sub-list for method output_type
+	95,  // [95:120] is the sub-list for method input_type
+	95,  // [95:95] is the sub-list for extension type_name
+	95,  // [95:95] is the sub-list for extension extendee
+	0,   // [0:95] is the sub-list for field type_name
 }
 
 func init() { file_taprootassets_proto_init() }

@@ -1846,6 +1846,10 @@
           "type": "string",
           "format": "byte",
           "description": "The txid of the transaction that the burn was anchored to."
+        },
+        "asset_type": {
+          "$ref": "#/definitions/taprpcAssetType",
+          "description": "The type of the burnt asset."
         }
       }
     },
