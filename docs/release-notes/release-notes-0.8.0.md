@@ -343,6 +343,11 @@
   `SendEvent`, allowing clients to distinguish grouped fungible assets from
   grouped collectible assets.
 
+- [PR#2126](https://github.com/lightninglabs/taproot-assets/pull/2126)
+  Add an `asset_type` field to `AssetBurn`. Affects `ListBurns`, allowing
+  clients to distinguish grouped fungible burns from grouped collectible
+  burns.
+
 - [PR#2100](https://github.com/lightninglabs/taproot-assets/pull/2100)
   Add pagination support (offset, limit, direction) to the `AssetLeaves`
   RPC endpoint, and add `MaxPageSize` validation to `AssetRoots`.

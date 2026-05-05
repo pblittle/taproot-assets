@@ -1874,6 +1874,9 @@ message AssetBurn {
 
     // The txid of the transaction that the burn was anchored to.
     bytes anchor_txid = 5;
+
+    // The type of the burnt asset.
+    AssetType asset_type = 6;
 }
 
 message ListBurnsResponse {

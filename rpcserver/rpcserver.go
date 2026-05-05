@@ -4149,6 +4149,7 @@ func marshalRpcBurn(b *tapfreighter.AssetBurn) *taprpc.AssetBurn {
 		Note:            b.Note,
 		AssetId:         b.AssetID,
 		TweakedGroupKey: b.GroupKey,
+		AssetType:       taprpc.AssetType(b.AssetType),
 		Amount:          b.Amount,
 		AnchorTxid:      b.AnchorTxid[:],
 	}
