@@ -90,6 +90,11 @@ type verifyOptions struct {
 	// skipTimeLockValidationForFinalProof skips locktime checks for the
 	// final proof in a file.
 	skipTimeLockValidationForFinalProof bool
+
+	// skipTimeLockValidation skips locktime checks for all proofs in a
+	// file. This is used when verifying proofs without access to the
+	// chain backend (e.g. during backup pre-verification).
+	skipTimeLockValidation bool
 }
 
 // defaultVerifyOptions returns a default set of proof verification options.
@@ -110,6 +115,15 @@ func WithSkipChainVerificationForFinalProof() VerifyOption {
 func WithSkipTimeLockValidationForFinalProof() VerifyOption {
 	return func(o *verifyOptions) {
 		o.skipTimeLockValidationForFinalProof = true
+	}
+}
+
+// WithSkipTimeLockValidationForAllProofs skips locktime checks for
+// every proof in the file. Use this when verifying proofs without
+// access to the chain backend.
+func WithSkipTimeLockValidationForAllProofs() VerifyOption {
+	return func(o *verifyOptions) {
+		o.skipTimeLockValidation = true
 	}
 }
 
@@ -1409,6 +1423,16 @@ func (f *File) Verify(ctx context.Context,
 		}
 
 		var proofOpts []ProofVerificationOption
+
+		// Skip timelocks for all proofs if requested.
+		if verifyOpts.skipTimeLockValidation &&
+			assetUsesTimeLock(&decodedProof.Asset) {
+
+			proofOpts = append(
+				proofOpts, WithSkipTimeLockValidation(),
+			)
+		}
+
 		if idx == len(f.proofs)-1 {
 			if verifyOpts.skipChainForFinalProof {
 				proofOpts = append(

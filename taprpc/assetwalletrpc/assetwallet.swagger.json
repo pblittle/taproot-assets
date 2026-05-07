@@ -739,6 +739,11 @@
           "type": "integer",
           "format": "int64",
           "description": "The number of assets that were successfully imported."
+        },
+        "num_skipped": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of assets that were skipped due to errors\nduring import. Details are logged server-side. Skipped\nassets may include those with verification failures,\nmissing proofs, or other per-asset data issues."
         }
       }
     },
